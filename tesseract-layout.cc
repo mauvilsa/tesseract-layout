@@ -68,7 +68,7 @@ void print_usage() {
   fprintf( stderr, "Description: Document layout analysis using tesseract\n" );
   fprintf( stderr, "Usage: %s [OPTIONS] IMAGE\n", tool );
   fprintf( stderr, "Options:\n" );
-  fprintf( stderr, " -S, --psm MODE       Page segmentation mode [3,10] (def.=%d)\n", gb_psm );
+  fprintf( stderr, " -S, --psm MODE       Page segmentation mode [3-10] (def.=%d)\n", gb_psm );
   fprintf( stderr, " -L, --level LEVEL    Layout level: 1=blocks, 2=paragraphs, 3=lines, 4=words, 5=chars (def.=%d)\n", gb_level );
   fprintf( stderr, " -F, --format FORMAT  Output format, either 'ascii' or 'xmlpage' (def.=xmlpage)\n" );
   fprintf( stderr, " -B, --blocks         Use blocks for the TextRegions (def.=%s)\n", strbool(gb_regblock) );
@@ -78,7 +78,7 @@ void print_usage() {
   fprintf( stderr, "     --ttb            Set top-to-bottom to all TextRegions (def.=false)\n" );
   fprintf( stderr, " -h, --help           Print this usage information and exit\n" );
   fprintf( stderr, " -v, --version        Print version and exit\n" );
-  system( "tesseract --help-psm 2>&1 | sed '/^ *[012] /d; s|, but no OSD (Default)||;' 1>&2" );
+  int r = system( "tesseract --help-psm 2>&1 | sed '/^ *[012] /d; s|, but no OSD||;' 1>&2" );
 }
 
 #ifdef __TESSERACT_SOURCE__
