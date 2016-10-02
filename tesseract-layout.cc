@@ -1,7 +1,7 @@
 /**
  * Tool that does document layout analysis using tesseract
  *
- * @version $Version: 2016.10.01$
+ * @version $Version: 2016.10.02$
  * @author Mauricio Villegas <mauvilsa@upv.es>
  * @copyright Copyright (c) 2015-present, Mauricio Villegas <mauvilsa@upv.es>
  * @link https://github.com/mauvilsa/tesseract-layout
@@ -21,22 +21,28 @@
 
 /*** Definitions **************************************************************/
 static char tool[] = "tesseract-layout";
-static char version[] = "$Version: 2016.10.01$";
+static char version[] = "$Version: 2016.10.02$";
 
 #define OUT_ASCII 0
 #define OUT_XMLPAGE 1
 
+int gb_psm = 3;
 int gb_level = 3;
 int gb_format = OUT_XMLPAGE;
 bool gb_regblock = true;
+int gb_direction = -1;
 
 enum {
   OPTION_HELP       = 'h',
   OPTION_VERSION    = 'v',
+  OPTION_PSM        = 'S',
   OPTION_LEVEL      = 'L',
   OPTION_FORMAT     = 'F',
   OPTION_BLOCKS     = 'B',
-  OPTION_PARAGRAPHS = 'P'
+  OPTION_PARAGRAPHS = 'P',
+  OPTION_LTR        = 256,
+  OPTION_RTL,
+  OPTION_TTB,
 };
 
 static char gb_short_options[] = "hvL:F:FBP";
@@ -44,32 +50,35 @@ static char gb_short_options[] = "hvL:F:FBP";
 static struct option gb_long_options[] = {
     { "help",        no_argument,       NULL, OPTION_HELP },
     { "version",     no_argument,       NULL, OPTION_VERSION },
+    { "psm",         required_argument, NULL, OPTION_PSM },
     { "level",       required_argument, NULL, OPTION_LEVEL },
     { "format",      required_argument, NULL, OPTION_FORMAT },
     { "blocks",      no_argument,       NULL, OPTION_BLOCKS },
     { "paragraphs",  no_argument,       NULL, OPTION_PARAGRAPHS },
+    { "ltr",         no_argument,       NULL, OPTION_LTR },
+    { "rtl",         no_argument,       NULL, OPTION_RTL },
+    { "ttb",         no_argument,       NULL, OPTION_TTB },
     { 0, 0, 0, 0 }
   };
 
 /*** Functions ****************************************************************/
 #define strbool( cond ) ( ( cond ) ? "true" : "false" )
 
-void print_usage( FILE *file ) {
-  fprintf( file, "Description: Document layout analysis using tesseract\n" );
-  fprintf( file, "Usage: %s [OPTIONS] IMAGE\n", tool );
-  fprintf( file, "Options:\n" );
-  fprintf( file, "  -L, --level LEVEL\n");
-  fprintf( file, "    Layout level: 1=blocks, 2=paragraphs, 3=lines, 4=words, 5=characters (def.=%d)\n", gb_level );
-  fprintf( file, "  -F, --format FORMAT\n");
-  fprintf( file, "    Output format, either 'ascii' or 'xmlpage' (def.=xmlpage)\n" );
-  fprintf( file, "  -B, --blocks\n");
-  fprintf( file, "    Use blocks for the TextRegions (def.=%s)\n", strbool(gb_regblock) );
-  fprintf( file, "  -P, --paragraphs\n");
-  fprintf( file, "    Use paragraphs for the TextRegions (def.=%s)\n", strbool(!gb_regblock) );
-  fprintf( file, "  -h, --help\n");
-  fprintf( file, "    Print this usage information and exit\n" );
-  fprintf( file, "  -v, --version\n");
-  fprintf( file, "    Print version and exit\n" );
+void print_usage() {
+  fprintf( stderr, "Description: Document layout analysis using tesseract\n" );
+  fprintf( stderr, "Usage: %s [OPTIONS] IMAGE\n", tool );
+  fprintf( stderr, "Options:\n" );
+  fprintf( stderr, " -S, --psm MODE       Page segmentation mode [3,10] (def.=%d)\n", gb_psm );
+  fprintf( stderr, " -L, --level LEVEL    Layout level: 1=blocks, 2=paragraphs, 3=lines, 4=words, 5=chars (def.=%d)\n", gb_level );
+  fprintf( stderr, " -F, --format FORMAT  Output format, either 'ascii' or 'xmlpage' (def.=xmlpage)\n" );
+  fprintf( stderr, " -B, --blocks         Use blocks for the TextRegions (def.=%s)\n", strbool(gb_regblock) );
+  fprintf( stderr, " -P, --paragraphs     Use paragraphs for the TextRegions (def.=%s)\n", strbool(!gb_regblock) );
+  fprintf( stderr, "     --ltr            Set left-to-right to all TextRegions (def.=false)\n" );
+  fprintf( stderr, "     --rtl            Set right-to-left to all TextRegions (def.=false)\n" );
+  fprintf( stderr, "     --ttb            Set top-to-bottom to all TextRegions (def.=false)\n" );
+  fprintf( stderr, " -h, --help           Print this usage information and exit\n" );
+  fprintf( stderr, " -v, --version        Print version and exit\n" );
+  system( "tesseract --help-psm 2>&1 | sed '/^ *[012] /d; s|, but no OSD (Default)||;' 1>&2" );
 }
 
 #ifdef __TESSERACT_SOURCE__
@@ -119,6 +128,13 @@ int main( int argc, char *argv[] ) {
   int n,m;
   while( ( n = getopt_long(argc,argv,gb_short_options,gb_long_options,&m) ) != -1 )
     switch( n ) {
+      case OPTION_PSM:
+        gb_psm = atoi(optarg);
+        if( gb_psm < 3 || gb_psm > 10 ) {
+          fprintf( stderr, "%s: error: invalid page segmentation mode: %s\n", tool, optarg );
+          return 1;
+        }
+        break;
       case OPTION_LEVEL:
         gb_level = atoi(optarg);
         if( gb_level < 1 || gb_level > 5 ) {
@@ -142,8 +158,17 @@ int main( int argc, char *argv[] ) {
       case OPTION_PARAGRAPHS:
         gb_regblock = false;
         break;
+      case OPTION_LTR:
+        gb_direction = tesseract::WRITING_DIRECTION_LEFT_TO_RIGHT;
+        break;
+      case OPTION_RTL:
+        gb_direction = tesseract::WRITING_DIRECTION_RIGHT_TO_LEFT;
+        break;
+      case OPTION_TTB:
+        gb_direction = tesseract::WRITING_DIRECTION_TOP_TO_BOTTOM;
+        break;
       case OPTION_HELP:
-        print_usage( stderr );
+        print_usage();
         return 0;
       case OPTION_VERSION:
         fprintf( stderr, "%s %.10s\n", tool, version+10 );
@@ -161,6 +186,8 @@ int main( int argc, char *argv[] ) {
 
   /// Read image ///
   Pix *image = pixRead( argv[optind] );
+  if( image == NULL )
+    return 1;
 
   /// Initialize tesseract ///
 #ifdef __TESSERACT_SOURCE__
@@ -169,8 +196,7 @@ int main( int argc, char *argv[] ) {
   tesseract::TessBaseAPI *tessApi = new tesseract::TessBaseAPI();
 #endif
   tessApi->InitForAnalysePage();
-  //tessApi->SetPageSegMode( tesseract::PSM_AUTO_OSD );
-  tessApi->SetPageSegMode( tesseract::PSM_AUTO_ONLY );
+  tessApi->SetPageSegMode( (tesseract::PageSegMode)gb_psm );
   tessApi->SetImage( image );
 
   /// Perform layout analysis ///
@@ -205,18 +231,57 @@ int main( int argc, char *argv[] ) {
 
   int x1, y1, x2, y2;
   int left, top, right, bottom;
+  tesseract::Orientation orientation;
+  tesseract::WritingDirection writing_direction;
+  tesseract::TextlineOrder textline_order;
+  float deskew_angle;
   tesseract::ParagraphJustification just;
   bool is_list, is_crown;
   int indent;
+
+  char direct[48];
+  char orient[48];
+  char xheight[48]; xheight[0] = '\0';
 
   int block = 0;
   while ( gb_level > 0 ) {
     block ++;
     iter->BoundingBox( tesseract::RIL_BLOCK, &left, &top, &right, &bottom );
+    iter->Orientation( &orientation, &writing_direction, &textline_order, &deskew_angle );
+    if ( xmlpage ) {
+      if ( gb_direction >= 0 )
+        writing_direction = (tesseract::WritingDirection)gb_direction;
+      switch( writing_direction ) {
+        case tesseract::WRITING_DIRECTION_LEFT_TO_RIGHT:
+          direct[0] = '\0';
+          break;
+        case tesseract::WRITING_DIRECTION_RIGHT_TO_LEFT:
+          sprintf( direct, " readingDirection=\"right-to-left\"" );
+          break;
+        case tesseract::WRITING_DIRECTION_TOP_TO_BOTTOM:
+          sprintf( direct, " readingDirection=\"top-to-bottom\"" );
+          break;
+      }
+      switch( orientation ) {
+        case tesseract::ORIENTATION_PAGE_UP:
+          orient[0] = '\0';
+          break;
+        case tesseract::ORIENTATION_PAGE_RIGHT:
+          sprintf( orient, " readingOrientation=\"90\"" );
+          break;
+        case tesseract::ORIENTATION_PAGE_DOWN:
+          sprintf( orient, " readingOrientation=\"180\"" );
+          break;
+        case tesseract::ORIENTATION_PAGE_LEFT:
+          sprintf( orient, " readingOrientation=\"-90\"" );
+          break;
+      }
+    }
+
     if ( ! xmlpage )
       printf( "block %d : %dx%d+%d+%d\n", block, right-left, bottom-top, left, top );
     else if ( gb_regblock ) {
-      printf( "    <TextRegion id=\"b%d\">\n", block );
+      printf( "    <TextRegion id=\"b%d\"%s%s>\n", block, direct, orient );
       printf( "      <Coords points=\"%d,%d %d,%d %d,%d %d,%d\"/>\n",
         left, top,   right, top,   right, bottom,   left, bottom );
     }
@@ -243,7 +308,7 @@ int main( int argc, char *argv[] ) {
         printf( " %dx%d+%d+%d\n", right-left, bottom-top, left, top );
       }
       else if ( ! gb_regblock ) {
-        printf( "    <TextRegion id=\"b%d_p%d\">\n", block, para );
+        printf( "    <TextRegion id=\"b%d_p%d\"%s%s>\n", block, para, direct, orient );
         printf( "      <Coords points=\"%d,%d %d,%d %d,%d %d,%d\"/>\n",
           left, top,   right, top,   right, bottom,   left, bottom );
       }
@@ -255,21 +320,13 @@ int main( int argc, char *argv[] ) {
         iter->Baseline( tesseract::RIL_TEXTLINE, &x1, &y1, &x2, &y2 );
 
 #ifdef __TESSERACT_SOURCE__
-        double xheight = iter->getXHeight();
+        sprintf( xheight, xmlpage ? " custom=\"x-height: %gpx;\"" : " %g", iter->getXHeight() );
 #endif
 
         if ( ! xmlpage )
-#ifdef __TESSERACT_SOURCE__
-          printf( "line %d : %d,%d %d,%d %dx%d+%d+%d %g\n", line, x1, y1, x2, y2, right-left, bottom-top, left, top, xheight );
-#else
-          printf( "line %d : %d,%d %d,%d %dx%d+%d+%d\n", line, x1, y1, x2, y2, right-left, bottom-top, left, top );
-#endif
+          printf( "line %d : %d,%d %d,%d %dx%d+%d+%d%s\n", line, x1, y1, x2, y2, right-left, bottom-top, left, top, xheight );
         else {
-#ifdef __TESSERACT_SOURCE__
-          printf( "      <TextLine id=\"b%d_p%d_l%d\" custom=\"x-height:%gpx;\">\n", block, para, line, xheight );
-#else
-          printf( "      <TextLine id=\"b%d_p%d_l%d\">\n", block, para, line );
-#endif
+          printf( "      <TextLine id=\"b%d_p%d_l%d\"%s>\n", block, para, line, xheight );
           printf( "        <Coords points=\"%d,%d %d,%d %d,%d %d,%d\"/>\n",
             left, top,   right, top,   right, bottom,   left, bottom );
           printf( "        <Baseline points=\"%d,%d %d,%d\"/>\n", x1, y1, x2, y2 );
