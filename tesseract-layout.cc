@@ -1,7 +1,7 @@
 /**
  * Tool that does document layout analysis using tesseract
  *
- * @version $Version: 2016.10.02$
+ * @version $Version: 2016.10.03$
  * @author Mauricio Villegas <mauvilsa@upv.es>
  * @copyright Copyright (c) 2015-present, Mauricio Villegas <mauvilsa@upv.es>
  * @link https://github.com/mauvilsa/tesseract-layout
@@ -21,7 +21,7 @@
 
 /*** Definitions **************************************************************/
 static char tool[] = "tesseract-layout";
-static char version[] = "$Version: 2016.10.02$";
+static char version[] = "$Version: 2016.10.03$";
 
 #define OUT_ASCII 0
 #define OUT_XMLPAGE 1
@@ -105,8 +105,11 @@ namespace tesseract {
         if (block_list_->empty())
           return NULL;  // The page was empty.
         bool merge_similar_words = false; // Merges all words in a line as a single word
+#ifdef TESSERACT_VERSION
         page_res_ = new PAGE_RES(merge_similar_words, block_list_, NULL); // tesseract 3.04
-        //page_res_ = new PAGE_RES(block_list_, NULL); // tesseract 3.02
+#else
+        page_res_ = new PAGE_RES(block_list_, NULL); // tesseract 3.02
+#endif
         DetectParagraphs(false);
         return new MyPageIterator(
             page_res_, tesseract_, thresholder_->GetScaleFactor(),
@@ -172,7 +175,11 @@ int main( int argc, char *argv[] ) {
         return 0;
       case OPTION_VERSION:
         fprintf( stderr, "%s %.10s\n", tool, version+10 );
+#ifdef TESSERACT_VERSION_STR
         fprintf( stderr, "compiled against tesseract %s, linked with %s\n", TESSERACT_VERSION_STR, tesseract::TessBaseAPI::Version() );
+#else
+        fprintf( stderr, "linked with tesseract %s\n", tesseract::TessBaseAPI::Version() );
+#endif
         return 0;
       default:
         fprintf( stderr, "%s: error: incorrect input argument: %s\n", tool, argv[optind-1] );
@@ -267,13 +274,13 @@ int main( int argc, char *argv[] ) {
           orient[0] = '\0';
           break;
         case tesseract::ORIENTATION_PAGE_RIGHT:
+          sprintf( orient, " readingOrientation=\"-90\"" );
+          break;
+        case tesseract::ORIENTATION_PAGE_LEFT:
           sprintf( orient, " readingOrientation=\"90\"" );
           break;
         case tesseract::ORIENTATION_PAGE_DOWN:
           sprintf( orient, " readingOrientation=\"180\"" );
-          break;
-        case tesseract::ORIENTATION_PAGE_LEFT:
-          sprintf( orient, " readingOrientation=\"-90\"" );
           break;
       }
     }
