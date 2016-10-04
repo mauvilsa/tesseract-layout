@@ -1,7 +1,7 @@
 /**
  * Tool that does document layout analysis using tesseract
  *
- * @version $Version: 2016.10.03$
+ * @version $Version: 2016.10.04$
  * @author Mauricio Villegas <mauvilsa@upv.es>
  * @copyright Copyright (c) 2015-present, Mauricio Villegas <mauvilsa@upv.es>
  * @link https://github.com/mauvilsa/tesseract-layout
@@ -21,7 +21,7 @@
 
 /*** Definitions **************************************************************/
 static char tool[] = "tesseract-layout";
-static char version[] = "$Version: 2016.10.03$";
+static char version[] = "$Version: 2016.10.04$";
 
 #define OUT_ASCII 0
 #define OUT_XMLPAGE 1
@@ -252,6 +252,30 @@ int main( int argc, char *argv[] ) {
 
   int block = 0;
   while ( gb_level > 0 ) {
+/*
+ 0 PT_UNKNOWN,        // Type is not yet known. Keep as the first element.
+ 1 PT_FLOWING_TEXT,   // Text that lives inside a column.
+ 2 PT_HEADING_TEXT,   // Text that spans more than one column.
+ 3 PT_PULLOUT_TEXT,   // Text that is in a cross-column pull-out region.
+ 4 PT_EQUATION,       // Partition belonging to an equation region.
+ 5 PT_INLINE_EQUATION,  // Partition has inline equation.
+ 6 PT_TABLE,          // Partition belonging to a table region.
+ 7 PT_VERTICAL_TEXT,  // Text-line runs vertically.
+ 8 PT_CAPTION_TEXT,   // Text that belongs to an image.
+ 9 PT_FLOWING_IMAGE,  // Image that lives inside a column.
+ 10 PT_HEADING_IMAGE,  // Image that spans more than one column.
+ 11 PT_PULLOUT_IMAGE,  // Image that is in a cross-column pull-out region.
+ 12 PT_HORZ_LINE,      // Horizontal Line.
+ 13 PT_VERT_LINE,      // Vertical Line.
+ 14 PT_NOISE,          // Lies outside of any column.
+*/
+    PolyBlockType btype = iter->BlockType();
+    if ( btype > PT_CAPTION_TEXT ) {
+      if ( ! iter->Next( tesseract::RIL_BLOCK ) )
+        break;
+      continue;
+    }
+
     block ++;
     iter->BoundingBox( tesseract::RIL_BLOCK, &left, &top, &right, &bottom );
     iter->Orientation( &orientation, &writing_direction, &textline_order, &deskew_angle );
