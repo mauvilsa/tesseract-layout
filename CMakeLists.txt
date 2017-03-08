@@ -8,7 +8,7 @@ pkg_check_modules( tesseract REQUIRED tesseract )
 
 file( GLOB tool_SRC "*.cc" )
 add_executable( ${tool_EXE} ${tool_SRC} )
-include_directories( ${tesseract_INCLUDEDIR} )
+include_directories( SYSTEM ${tesseract_INCLUDEDIR} )
 if( EXISTS "${CMAKE_HOME_DIRECTORY}/tesseract-ocr" )
   include_directories( tesseract-ocr/ccstruct tesseract-ocr/ccutil tesseract-ocr/cutil tesseract-ocr/image tesseract-ocr/viewer )
   add_definitions( -D__TESSERACT_SOURCE__ )
