@@ -45,7 +45,7 @@ enum {
   OPTION_TTB,
 };
 
-static char gb_short_options[] = "hvL:F:FBP";
+static char gb_short_options[] = "hvS:L:F:BP";
 
 static struct option gb_long_options[] = {
     { "help",        no_argument,       NULL, OPTION_HELP },
@@ -133,10 +133,10 @@ int main( int argc, char *argv[] ) {
     switch( n ) {
       case OPTION_PSM:
         gb_psm = atoi(optarg);
-        if( gb_psm < 3 || gb_psm > 10 ) {
+        /*if( gb_psm < 3 || gb_psm > 10 ) {
           fprintf( stderr, "%s: error: invalid page segmentation mode: %s\n", tool, optarg );
           return 1;
-        }
+        }*/
         break;
       case OPTION_LEVEL:
         gb_level = atoi(optarg);
