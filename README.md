@@ -2,6 +2,10 @@
 
 tesseract-layout - A tool for obtaining tesseract's layout analysis in Page XML format.
 
+# DEPRECATION
+
+Exactly the same functionality that this tool provides is available in the much more versatile [tesseract-recognize](https://github.com/mauvilsa/tesseract-recognize) tool. This tesseract-layout is considered deprecated and will no longer be supported.
+
 # INSTALLATION AND USAGE
 
     git clone https://github.com/mauvilsa/tesseract-layout
@@ -21,4 +25,4 @@ The results can be viewed/edited using the Page XML editor available at https://
 
 The MIT License (MIT)
 
-Copyright (c) 2015-present, Mauricio Villegas <mauvilsa@upv.es>
+Copyright (c) 2015-present, Mauricio Villegas <mauricio_ville@yahoo.com>

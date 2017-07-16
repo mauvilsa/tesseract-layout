@@ -1,9 +1,9 @@
 /**
  * Tool that does document layout analysis using tesseract
  *
- * @version $Version: 2016.10.04$
- * @author Mauricio Villegas <mauvilsa@upv.es>
- * @copyright Copyright (c) 2015-present, Mauricio Villegas <mauvilsa@upv.es>
+ * @version $Version: 2017.07.16$
+ * @author Mauricio Villegas <mauricio_ville@yahoo.com>
+ * @copyright Copyright (c) 2015-present, Mauricio Villegas <mauricio_ville@yahoo.com>
  * @link https://github.com/mauvilsa/tesseract-layout
  * @license MIT License
  */
@@ -21,7 +21,7 @@
 
 /*** Definitions **************************************************************/
 static char tool[] = "tesseract-layout";
-static char version[] = "$Version: 2016.10.04$";
+static char version[] = "$Version: 2017.07.16$";
 
 #define OUT_ASCII 0
 #define OUT_XMLPAGE 1
@@ -79,6 +79,8 @@ void print_usage() {
   fprintf( stderr, " -h, --help           Print this usage information and exit\n" );
   fprintf( stderr, " -v, --version        Print version and exit\n" );
   int r = system( "tesseract --help-psm 2>&1 | sed '/^ *[012] /d; s|, but no OSD||;' 1>&2" );
+  if( r != 0 )
+    fprintf( stderr, "warning: tesseract command not found in path\n" );
 }
 
 #ifdef __TESSERACT_SOURCE__
@@ -125,8 +127,6 @@ namespace tesseract {
 
 /*** Program ******************************************************************/
 int main( int argc, char *argv[] ) {
-  int err = 0;
-
   /// Parse input arguments ///
   int n,m;
   while( ( n = getopt_long(argc,argv,gb_short_options,gb_long_options,&m) ) != -1 )
